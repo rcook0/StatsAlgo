@@ -14,6 +14,161 @@ Features:
 8. Trade log panel
 9. Batch/backtesting integration placeholder
 """
+"""
+streamlit_backtester.py
+
+Interactive Backtesting Interface with Stepping/Play/Pause
+-----------------------------------------------------------
+Features:
+1. Symbol selection from database or CSV import
+2. Date range and timeframe selection
+3. Strategy and indicator selection (importable)
+4. Step-through bar-by-bar or play at adjustable speed (~30 bars/sec)
+5. Candlestick chart updates live with trade markers
+6. Live equity, running P/L, % gain/loss updates
+7. Optional live feed hook
+8. Trade log panel (last 10 trades)
+9. Pause/Resume support for play mode
+10. Batch/backtesting integration placeholder
+"""
+
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+import time
+
+# -----------------------------
+# Configuration & Globals
+# -----------------------------
+DEFAULT_SYMBOL = "US30"
+DEFAULT_TIMEFRAME = "1min"
+MAX_SPEED = 30  # bars per second
+
+# -----------------------------
+# Data / Strategy Placeholders
+# -----------------------------
+def load_symbol_data(symbol: str, start_date: str, end_date: str, timeframe: str) -> pd.DataFrame:
+    """Load historical data for symbol."""
+    df = pd.DataFrame()  # Replace with actual DB/CSV loading
+    return df
+
+def apply_strategy(df: pd.DataFrame, strategy_name: str) -> pd.DataFrame:
+    """Apply strategy; add 'signal' column."""
+    df['signal'] = None  # Replace with real strategy logic
+    return df
+
+def calculate_equity(df: pd.DataFrame, index: int):
+    """Placeholder for equity calculations up to current index."""
+    equity = 100_000
+    running_pl = 0
+    pct_change = 0
+    return equity, running_pl, pct_change
+
+# -----------------------------
+# Streamlit UI
+# -----------------------------
+st.title("Interactive Backtester")
+
+symbol = st.selectbox("Select Symbol", ["US30", "BTCUSD", "XAUUSD", "GBPJPY"])
+start_date = st.date_input("Start Date", datetime.now() - timedelta(days=30))
+end_date = st.date_input("End Date", datetime.now())
+timeframe = st.selectbox("Timeframe", ["1min", "5min", "15min", "1H", "1D"])
+strategy = st.selectbox("Select Strategy", ["ExampleStrategy1", "ExampleStrategy2"])
+
+# Load data button
+if st.button("Load Data"):
+    data = load_symbol_data(symbol, str(start_date), str(end_date), timeframe)
+    data = apply_strategy(data, strategy)
+    st.session_state['data'] = data
+    st.session_state['current_index'] = 0
+    st.session_state['playing'] = False
+    st.success(f"Loaded {len(data)} bars for {symbol}")
+
+# Speed slider
+speed = st.slider("Play Speed (bars/sec)", min_value=1, max_value=MAX_SPEED, value=5)
+
+# Step / Play / Pause buttons
+col1, col2, col3 = st.columns(3)
+with col1:
+    step = st.button("Step")
+with col2:
+    play = st.button("Play")
+with col3:
+    pause = st.button("Pause")
+
+# -----------------------------
+# Placeholders for chart and stats
+# -----------------------------
+chart_placeholder = st.empty()
+equity_placeholder = st.empty()
+trade_log_placeholder = st.empty()
+
+# -----------------------------
+# Backtesting Loop
+# -----------------------------
+if 'data' in st.session_state:
+    df = st.session_state['data']
+    index = st.session_state.get('current_index', 0)
+    playing = st.session_state.get('playing', False)
+
+    def update_display(idx):
+        """Update chart, equity, and trade log up to current index."""
+        display_df = df.iloc[:idx]
+        
+        # Candlestick chart
+        fig = go.Figure(data=[go.Candlestick(
+            x=display_df['datetime'],
+            open=display_df['open'],
+            high=display_df['high'],
+            low=display_df['low'],
+            close=display_df['close'],
+            name=symbol
+        )])
+        # Plot trades as markers
+        trades = display_df[display_df['signal'].notnull()]
+        if not trades.empty:
+            fig.add_trace(go.Scatter(
+                x=trades['datetime'],
+                y=trades['close'],
+                mode='markers',
+                marker=dict(color='red', size=10, symbol='triangle-up'),
+                name='Trades'
+            ))
+        chart_placeholder.plotly_chart(fig, use_container_width=True)
+
+        # Equity / P&L placeholders
+        equity, running_pl, pct_change = calculate_equity(df, idx)
+        equity_placeholder.write(f"Equity Balance: ${equity:,.2f}")
+        equity_placeholder.write(f"Running P/L: ${running_pl:,.2f}")
+        equity_placeholder.write(f"% Gain/Loss: {pct_change:.2f}%")
+
+        # Trade log (last 10 trades)
+        trade_log_placeholder.dataframe(display_df[['datetime', 'signal']].tail(10))
+
+    # Step mode
+    if step and index < len(df):
+        index += 1
+        st.session_state['current_index'] = index
+        update_display(index)
+
+    # Play / Pause logic
+    if play:
+        st.session_state['playing'] = True
+
+    if pause:
+        st.session_state['playing'] = False
+
+    # Continuous play (non-blocking)
+    while st.session_state.get('playing', False) and index < len(df):
+        index += 1
+        st.session_state['current_index'] = index
+        update_display(index)
+        time.sleep(1 / speed)
+        # This loop will stop if pause button is clicked (st.session_state['playing'] = False)
+    
+    # Initial display
+    update_display(index)
 
 import streamlit as st
 import pandas as pd
