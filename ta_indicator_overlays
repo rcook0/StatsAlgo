@@ -1,0 +1,70 @@
+# ---------------------------
+# ADVANCED INDICATOR OVERLAYS
+# ---------------------------
+import ta  # Technical Analysis library: pip install ta
+
+# Compute indicators for display
+def add_indicators(df):
+    # Simple Moving Average (SMA)
+    df['SMA_20'] = df['Close'].rolling(20).mean()
+    df['SMA_50'] = df['Close'].rolling(50).mean()
+    
+    # Exponential Moving Average (EMA)
+    df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+    df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    
+    # Bollinger Bands
+    df['BB_High'] = df['Close'].rolling(20).mean() + 2*df['Close'].rolling(20).std()
+    df['BB_Low'] = df['Close'].rolling(20).mean() - 2*df['Close'].rolling(20).std()
+    
+    # RSI
+    df['RSI'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
+    
+    # MACD
+    macd = ta.trend.MACD(df['Close'])
+    df['MACD'] = macd.macd()
+    df['MACD_Signal'] = macd.macd_signal()
+    
+    return df
+
+if not st.session_state.df_backtest.empty:
+    st.session_state.df_backtest = add_indicators(st.session_state.df_backtest)
+
+# ---------------------------
+# PLOTLY CANDLE CHART WITH INDICATORS
+# ---------------------------
+if not st.session_state.df_backtest.empty:
+    df_display = st.session_state.df_backtest.iloc[:st.session_state.current_index+1]
+    fig = go.Figure(data=[go.Candlestick(
+        x=df_display['DateTime'],
+        open=df_display['Open'],
+        high=df_display['High'],
+        low=df_display['Low'],
+        close=df_display['Close'],
+        name=symbol_selected
+    )])
+    
+    # Overlay buy/sell signals
+    buys = df_display[df_display['Signal']==1]
+    sells = df_display[df_display['Signal']==-1]
+    fig.add_trace(go.Scatter(x=buys['DateTime'], y=buys['Close'], mode='markers',
+                             marker_symbol='triangle-up', marker_color='green', marker_size=10, name='Buy'))
+    fig.add_trace(go.Scatter(x=sells['DateTime'], y=sells['Close'], mode='markers',
+                             marker_symbol='triangle-down', marker_color='red', marker_size=10, name='Sell'))
+
+    # Overlay SMAs / EMAs
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['SMA_20'], line=dict(color='blue', width=1), name='SMA 20'))
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['SMA_50'], line=dict(color='darkblue', width=1), name='SMA 50'))
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['EMA_20'], line=dict(color='orange', width=1), name='EMA 20'))
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['EMA_50'], line=dict(color='red', width=1), name='EMA 50'))
+    
+    # Overlay Bollinger Bands
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['BB_High'], line=dict(color='purple', width=1, dash='dot'), name='BB High'))
+    fig.add_trace(go.Scatter(x=df_display['DateTime'], y=df_display['BB_Low'], line=dict(color='purple', width=1, dash='dot'), name='BB Low'))
+    
+    fig.update_layout(title=f"{symbol_selected} Backtest with Indicators", xaxis_title='Date', yaxis_title='Price')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Optional: display RSI / MACD below chart
+    st.subheader("RSI & MACD")
+    st.line_chart(df_display[['RSI','MACD','MACD_Signal']].set_index(df_display['DateTime']))
