@@ -1,0 +1,16 @@
+Opening range breakout; 
+Gap fade/continuation; 
+Volatility breakout compression/expansion; 
+Time of day mean reversion; 
+MicroStructure imbalance
+Mean-Reversion on Returns 
+Volatility Breakout 
+Probabilistic Time-of-Day Edge
+Overnight Gap Strategy 
+Probability of Sign Sequences 
+Return Clustering (GARCH-like approach) 
+Extreme Quantile Strategy 
+Expected Value Maximization 
+Sequential Reversal / Run-length Probabilities     
+Monte Carlo / Bootstrapping Approach ; 
+Mean reversion on price changes; 
