@@ -1,0 +1,31 @@
+Sigma extreme; 
+
+Opening Range Breakout; 
+
+Gap Fade/Continuation; 
+
+Volatility Breakout; 
+
+TOD Mean reversion; 
+
+microstructure imbalance
+
+Mean-Reversion on Returns
+
+Volatility Breakout
+
+Probabilistic Time-of-Day Edge
+
+Overnight Gap Strategy
+
+Probability of Sign Sequences
+
+Return Clustering (GARCH-like approach)
+
+Extreme Quantile Strategy
+
+Expected Value Maximization
+
+Sequential Reversal / Run-length Probabilities
+
+Monte Carlo / Bootstrapping Approach
