@@ -1,0 +1,105 @@
+"""
+Volatility Breakout Overlay for Streamlit Backtester
+Author: ChatGPT
+Description:
+    Adds breakout levels, ATR bands, and entry/exit markers to the candle chart.
+    Compatible with minute-level stepping and live/backtesting modes.
+"""
+
+import pandas as pd
+import plotly.graph_objects as go
+
+class VolatilityBreakoutVisualizer:
+    def __init__(self, data, signals, atr_period=30, k=2):
+        """
+        Parameters:
+            data : pd.DataFrame
+                OHLCV data with ['Open','High','Low','Close','Volume']
+            signals : pd.Series
+                'LONG', 'SHORT', 'HOLD'
+            atr_period : int
+                Lookback period for ATR
+            k : float
+                Breakout multiplier
+        """
+        self.data = data.copy()
+        self.signals = signals
+        self.atr_period = atr_period
+        self.k = k
+        self.calculate_atr()
+        self.calculate_bands()
+
+    def calculate_atr(self):
+        high_low = self.data['High'] - self.data['Low']
+        high_close = (self.data['High'] - self.data['Close'].shift()).abs()
+        low_close = (self.data['Low'] - self.data['Close'].shift()).abs()
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        self.data['ATR'] = tr.rolling(self.atr_period, min_periods=1).mean()
+
+    def calculate_bands(self):
+        self.data['UpperBand'] = self.data['Close'].shift(1) + self.k * self.data['ATR']
+        self.data['LowerBand'] = self.data['Close'].shift(1) - self.k * self.data['ATR']
+
+    def plot(self):
+        fig = go.Figure()
+
+        # Candlestick
+        fig.add_trace(go.Candlestick(
+            x=self.data.index,
+            open=self.data['Open'],
+            high=self.data['High'],
+            low=self.data['Low'],
+            close=self.data['Close'],
+            name='Price'
+        ))
+
+        # ATR breakout bands
+        fig.add_trace(go.Scatter(
+            x=self.data.index, y=self.data['UpperBand'],
+            line=dict(color='green', width=1, dash='dash'),
+            name='Upper Breakout'
+        ))
+        fig.add_trace(go.Scatter(
+            x=self.data.index, y=self.data['LowerBand'],
+            line=dict(color='red', width=1, dash='dash'),
+            name='Lower Breakout'
+        ))
+
+        # Entry markers
+        long_entries = self.data.index[self.signals == 'LONG']
+        short_entries = self.data.index[self.signals == 'SHORT']
+        fig.add_trace(go.Scatter(
+            x=long_entries,
+            y=self.data.loc[long_entries, 'Close'],
+            mode='markers',
+            marker=dict(symbol='triangle-up', size=10, color='green'),
+            name='LONG Entry'
+        ))
+        fig.add_trace(go.Scatter(
+            x=short_entries,
+            y=self.data.loc[short_entries, 'Close'],
+            mode='markers',
+            marker=dict(symbol='triangle-down', size=10, color='red'),
+            name='SHORT Entry'
+        ))
+
+        fig.update_layout(
+            title="Volatility Breakout Strategy",
+            xaxis_title="Datetime",
+            yaxis_title="Price",
+            xaxis_rangeslider_visible=False,
+            template='plotly_dark',
+            autosize=True
+        )
+        return fig
+
+
+# Example usage
+if __name__ == "__main__":
+    df = pd.read_csv("data/US30_1min.csv", parse_dates=['Datetime'], index_col='Datetime')
+    from volatility_breakout import VolatilityBreakout
+    strategy = VolatilityBreakout(df)
+    signals = strategy.get_signals()
+    visualizer = VolatilityBreakoutVisualizer(df, signals)
+    fig = visualizer.plot()
+    fig.show()
