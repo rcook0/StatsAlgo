@@ -6,7 +6,7 @@ Gap Fade/Continuation;
 
 Volatility Breakout; 
 
-TOD Mean reversion; 
+Time-Of-Day Mean reversion; 
 
 microstructure imbalance
 
