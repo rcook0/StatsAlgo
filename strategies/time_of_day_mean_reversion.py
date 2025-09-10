@@ -1,12 +1,16 @@
-import pandas as pd
+class TimeOfDayMeanReversion:
+    def __init__(self, df, hour=14):
+        self.df = df
+        self.hour = hour
 
-def run_strategy(df):
-    if len(df)<60:
-        return None
-    last = df.iloc[-1]
-    mean_price = df['close'].mean()
-    if last['close']>mean_price*1.01:
-        return 'sell'
-    elif last['close']<mean_price*0.99:
-        return 'buy'
-    return None
+    def run(self):
+        df = self.df.copy()
+        trades = []
+        hourly = df[df["Date"].dt.hour == self.hour]
+
+        for i in range(1, len(hourly)):
+            if hourly["Close"].iloc[i] > hourly["Close"].iloc[i-1]:
+                trades.append((hourly["Date"].iloc[i], "SHORT", hourly["Close"].iloc[i]))
+            else:
+                trades.append((hourly["Date"].iloc[i], "LONG", hourly["Close"].iloc[i]))
+        return trades

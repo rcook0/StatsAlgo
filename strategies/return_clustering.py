@@ -1,14 +1,16 @@
-import pandas as pd
-import numpy as np
+class ReturnClustering:
+    def __init__(self, df, window=10):
+        self.df = df
+        self.window = window
 
-def run_strategy(df):
-    if len(df)<10:
-        return None
-    returns = df['close'].pct_change().fillna(0)
-    recent_std = returns[-5:].std()
-    overall_std = returns.std()
-    if recent_std>1.5*overall_std:
-        return 'buy'
-    elif recent_std<0.5*overall_std:
-        return 'sell'
-    return None
+    def run(self):
+        df = self.df.copy()
+        trades = []
+        df["vol"] = df["Close"].pct_change().rolling(self.window).std()
+
+        for i in range(self.window, len(df)):
+            if df["vol"].iloc[i] > df["vol"].iloc[i-1]:
+                trades.append((df["Date"].iloc[i], "LONG", df["Close"].iloc[i]))
+            elif df["vol"].iloc[i] < df["vol"].iloc[i-1]:
+                trades.append((df["Date"].iloc[i], "SHORT", df["Close"].iloc[i]))
+        return trades

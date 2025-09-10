@@ -1,21 +1,23 @@
-# sigma_extreme.py
-"""
-Sigma Extreme Strategy
-
-Signals when returns deviate more than N sigma from mean.
-"""
 import pandas as pd
 import numpy as np
 
-def run_strategy(df):
-    if len(df)<20:
-        return None
-    df['returns'] = df['close'].pct_change()
-    mean = df['returns'].mean()
-    std = df['returns'].std()
-    latest = df['returns'].iloc[-1]
-    if latest > mean + 2*std:
-        return 'sell'
-    elif latest < mean - 2*std:
-        return 'buy'
-    return None
+class SigmaExtreme:
+    def __init__(self, df, window=20, sigma=2):
+        self.df = df
+        self.window = window
+        self.sigma = sigma
+
+    def run(self):
+        df = self.df.copy()
+        df["mean"] = df["Close"].rolling(self.window).mean()
+        df["std"] = df["Close"].rolling(self.window).std()
+        trades = []
+
+        for i in range(self.window, len(df)):
+            price, mean, std = df["Close"].iloc[i], df["mean"].iloc[i], df["std"].iloc[i]
+            if price > mean + self.sigma * std:
+                trades.append((df["Date"].iloc[i], "SHORT", price))
+            elif price < mean - self.sigma * std:
+                trades.append((df["Date"].iloc[i], "LONG", price))
+
+        return trades
