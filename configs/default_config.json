@@ -1,0 +1,11 @@
+{
+  "sl_pct": 0.01,
+  "tp_pct": 0.02,
+  "trail_type": "percent",
+  "trail_value": 0.01,
+  "risk_per_trade": 0.01,
+  "init_equity": 100000,
+  "use_htf": false,
+  "htf": "D",
+  "ema_period": 20
+}
